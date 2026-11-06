@@ -9,6 +9,9 @@ namespace AgriStreamMVC.Models
 
         public List<SensorReading> Readings { get; set; }
             = new List<SensorReading>();
+
+        public List<Device> Devices { get; set; } = new();
+
     }
 
     public class SensorReading

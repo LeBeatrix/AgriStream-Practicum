@@ -13,50 +13,63 @@
 
     @if (TempData["Message"] != null)
     {
-        <div class="alert alert-info">
+        <div class="alert alert-info" role="alert">
             @TempData["Message"]
         </div>
     }
 
+    <!-- Dashboard Summary -->
     <div class="row mb-4">
 
         <div class="col-md-4 mb-3">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <h5>Total Sensors</h5>
                     <h2>@Model.TotalSensors</h2>
+                    <small class="text-muted">
+                        Connected sensor readings
+                    </small>
                 </div>
             </div>
         </div>
 
         <div class="col-md-4 mb-3">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <h5>Active Devices</h5>
                     <h2>@Model.ActiveDevices</h2>
+                    <small class="text-muted">
+                        Currently active irrigation devices
+                    </small>
                 </div>
             </div>
         </div>
 
         <div class="col-md-4 mb-3">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <h5>Alerts</h5>
                     <h2>@Model.Alerts</h2>
+                    <small class="text-muted">
+                        Farm monitoring alerts
+                    </small>
                 </div>
             </div>
         </div>
 
     </div>
 
+    <!-- Sensor Telemetry -->
     <div class="card shadow-sm mb-4">
+
         <div class="card-header">
-            <h5>Sensor Telemetry</h5>
+            <h5 class="mb-0">Sensor Telemetry</h5>
         </div>
 
         <div class="card-body table-responsive">
 
-            <table class="table table-striped">
+            <table class="table table-striped table-hover">
+
                 <thead>
                     <tr>
                         <th>Sensor</th>
@@ -64,33 +77,61 @@
                         <th>Temperature</th>
                         <th>Soil Moisture</th>
                         <th>Humidity</th>
+                        <th>Last Updated</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    @foreach (var sensor in Model.Readings)
+                    @if (Model.Readings != null &&
+                         Model.Readings.Any())
+                    {
+                        @foreach (var sensor in Model.Readings)
+                        {
+                            <tr>
+                                <td>@sensor.SensorId</td>
+                                <td>@sensor.Location</td>
+                                <td>@sensor.Temperature °C</td>
+                                <td>@sensor.SoilMoisture %</td>
+                                <td>@sensor.Humidity %</td>
+                                <td>
+                                    @sensor.Timestamp.ToString(
+                                        "yyyy-MM-dd HH:mm")
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
                     {
                         <tr>
-                            <td>@sensor.SensorId</td>
-                            <td>@sensor.Location</td>
-                            <td>@sensor.Temperature °C</td>
-                            <td>@sensor.SoilMoisture %</td>
-                            <td>@sensor.Humidity %</td>
+                            <td colspan="6"
+                                class="text-center text-muted">
+                                No sensor readings available.
+                            </td>
                         </tr>
                     }
                 </tbody>
+
             </table>
 
         </div>
     </div>
 
+    <!-- Drone Upload and Irrigation -->
     <div class="row">
 
+        <!-- Drone Image Upload -->
         <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
+
+            <div class="card shadow-sm h-100">
+
                 <div class="card-body">
 
                     <h5>Drone Image Upload</h5>
+
+                    <p class="text-muted">
+                        Upload farm drone images to
+                        Azure Blob Storage.
+                    </p>
 
                     <form asp-controller="Home"
                           asp-action="UploadDroneImage"
@@ -99,11 +140,21 @@
 
                         @Html.AntiForgeryToken()
 
+                        <label for="image"
+                               class="form-label">
+                            Select Drone Image
+                        </label>
+
                         <input type="file"
+                               id="image"
                                name="image"
-                               accept="image/*"
-                               class="form-control mb-3"
+                               accept=".jpg,.jpeg,.png"
+                               class="form-control mb-2"
                                required />
+
+                        <small class="text-muted d-block mb-3">
+                            JPG or PNG, maximum 10 MB.
+                        </small>
 
                         <button type="submit"
                                 class="btn btn-primary">
@@ -111,34 +162,86 @@
                         </button>
 
                     </form>
+
                 </div>
             </div>
         </div>
 
+        <!-- Irrigation Control -->
         <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
+
+            <div class="card shadow-sm h-100">
+
                 <div class="card-body">
 
                     <h5>Irrigation Control</h5>
 
-                    <p>Device: Pump-001</p>
-                    <p>Status: Demo / Idle</p>
+                    <p class="text-muted">
+                        Manage irrigation through
+                        Azure Queue Storage.
+                    </p>
 
-                    <form asp-controller="Home"
-                          asp-action="TriggerIrrigation"
-                          method="post">
+                    @if (Model.Devices != null &&
+                         Model.Devices.Any())
+                    {
+                        @foreach (var device in Model.Devices)
+                        {
+                            <div class="border rounded p-3 mb-3">
 
-                        @Html.AntiForgeryToken()
+                                <p class="mb-2">
+                                    <strong>Device:</strong>
+                                    @device.DeviceName
+                                </p>
 
-                        <button type="submit"
-                                class="btn btn-success">
-                            Trigger Irrigation
-                        </button>
+                                <p class="mb-0">
+                                    <strong>Status:</strong>
 
-                    </form>
+                                    @if (device.OperationalStatus == "Active")
+                                    {
+                                        <span class="badge bg-success">
+                                            Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">
+                                            @device.OperationalStatus
+                                        </span>
+                                    }
+                                </p>
+
+                            </div>
+                        }
+
+                        <form asp-controller="Home"
+                              asp-action="TriggerIrrigation"
+                              method="post">
+
+                            @Html.AntiForgeryToken()
+
+                            <button type="submit"
+                                    class="btn btn-success">
+                                Turn Irrigation ON
+                            </button>
+
+                        </form>
+
+                        <small class="text-muted d-block mt-2">
+                            The command is added to Azure Queue
+                            Storage for processing.
+                        </small>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            No irrigation devices available.
+                        </div>
+                    }
+
                 </div>
             </div>
         </div>
 
     </div>
+
 </div>
